@@ -1,0 +1,149 @@
+@startuml domain_1
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam dpi 200
+hide empty members
+
+class Lokalizacja <<dataType>>{
+    dlugosc: Real
+    szerokosc: Real
+}
+
+enum StatusKontaUzytkownika {
+    AKTYWNE
+    ZADLUZONE
+    NIEAKTYWNE
+}
+
+enum StatusRoweru {
+    DOSTEPNY
+    WYPOZYCZONY
+    ZAREZERWOWANY
+    W_SERWISIE
+    POTENCJALNIE_USZKODZONY
+}
+
+enum StatusWypozyczenia {
+    W_TRAKCIE
+    ZAKONCZONE
+    ZAPAUZOWANE
+}
+
+enum StatusRezerwacji {
+    AKTYWNA
+    WYGASLA
+    ZREALIZOWANA
+    ANULOWANA
+}
+
+enum TypTransakcji {
+    WPLATA
+    OPLATA
+    NAGRODA
+    KARA
+}
+
+enum TypUsterki {
+    BRAK_POWIETRZA_TYL
+    BRAK_POWIETRZA_PRZOD
+    USZKODZONY_ZAMEK
+    USZKODZONY_LANCUCH
+    USZKODZONE_SIODELKO
+    USZKODZONA_KIEROWNICA
+}
+
+enum TypAbonamentu {
+    DOBOWY
+    TYGODNIOWY
+    MIESIECZNY
+}
+
+class Uzytkownik {
+    id_uzytkownika: String [1]
+    email: String [1]
+    skrot_hasla: String [1]
+}
+
+class KontoUzytkownika {
+    id_konta: String [1]
+    saldo: Real [1] = 0.0
+    status: StatusKontaUzytkownika [1] = NIEAKTYWNE
+    ma_podpieta_karte: Boolean [1] = false
+    /dozwolone_wypozyczenie: Boolean [1] = false
+}
+
+class Rower {
+    id_roweru: String [1]
+    kod_qr: String [1]
+    status: StatusRoweru [1] = W_SERWISIE
+    lokalizacja: Lokalizacja [1]
+}
+
+class StacjaDokujaca {
+    id_stacji: String[1]
+    nazwa : String [1]
+    lokalizacja: Lokalizacja[1]
+    pojemnosc: Integer[1]
+    /liczba_wolnych_miejsc: Integer
+}
+
+class Abonament {
+    id_abonamentu: String [1]
+    typ: TypAbonamentu [1]
+    czas_rozpoczecia: String[1]
+    czas_zakonczenia: String[1]
+    czas_anulowania: DataCzas [0..1]
+    /czy_aktywny: Boolean [1] = false
+}
+
+class Wypozyczenie {
+    id_wypozyczenia: String [1]
+    czas_rozpoczecia: String[1]
+    czas_zakonczenia: DataCzas [0..1]
+    koszt: Real [0..1]
+    status: StatusWypozyczenia [1] = W_TRAKCIE
+}
+
+class Rezerwacja {
+  id_rezerwacji: String [1]
+  czas_utworzenia: String[1]
+  czas_wygasniecia: String[1]
+  status: StatusRezerwacji [1] = AKTYWNA
+}
+
+class ZgloszenieUsterki {
+  id_zgloszenia: String [1]
+  czas_zgloszenia: String[1]
+  typ_usterki: TypUsterki [1]
+  opis: String [0..1]
+  czy_zweryfikowane: Boolean [1] = false
+  czy_potwierdzone: Boolean [1] = false
+}
+
+class Transakcja {
+  id_transakcji: String [1]
+  kwota: Real [1]
+  czas_rejestracji: String[1]
+  typ: TypTransakcji [1]
+}
+
+
+Uzytkownik "1" - "1" KontoUzytkownika : jest powiązany z >
+Rower "0..*" -- "0..1" StacjaDokujaca : jest w obbrębie >
+
+KontoUzytkownika "1" -up- "0..*" Abonament : ma wykupiony >
+KontoUzytkownika "1" -- "0..*" Transakcja : rejestruje >
+Wypozyczenie "1" -- "0..1" Transakcja : jest opłacane przez >
+
+Uzytkownik "1" -- "0..*" Wypozyczenie : inicjuje >
+Wypozyczenie "0..*" -- "1" Rower : dotyczy >
+
+Uzytkownik "1" -- "0..1" Rezerwacja : dokonuje >
+Rezerwacja "0..*" -- "1" Rower : dotyczy >
+
+Uzytkownik "1" -right- "0..*" ZgloszenieUsterki : rejestruje >
+ZgloszenieUsterki "0..*" -- "1" Rower : dotyczy >
+
+
+@enduml

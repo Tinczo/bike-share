@@ -1,0 +1,81 @@
+Table uzytkownicy {
+  id_uzytkownika bigint [pk]
+  email varchar(255) [not null]
+  skrot_hasla varchar(255) [not null]
+}
+
+Table konta_uzytkownikow {
+  id_konta bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  saldo double [not null]
+  status varchar(20) [not null]
+  ma_podpieta_karte boolean [not null]
+  data_utworzenia timestamp [not null]
+  data_aktualizacji timestamp [not null]
+  ostatnie_logowanie timestamp
+}
+
+Table stacje {
+  id_stacji bigint [pk]
+  nazwa varchar(200) [not null]
+  lokalizacja_dlugosc double [not null]
+  lokalizacja_szerokosc double [not null]
+  pojemnosc int [not null]
+}
+
+Table rowery {
+  id_roweru bigint [pk]
+  kod_qr varchar(100) [not null]
+  status varchar(30) [not null]
+  lokalizacja_dlugosc double
+  lokalizacja_szerokosc double
+  id_stacji bigint [ref: > stacje.id_stacji]
+}
+
+Table wypozyczenia {
+  id_wypozyczenia bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  czas_rozpoczecia timestamp [not null]
+  czas_zakonczenia timestamp
+  koszt double
+  status varchar(20) [not null]
+}
+
+Table rezerwacje {
+  id_rezerwacji bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  czas_utworzenia timestamp [not null]
+  czas_wygasniecia timestamp [not null]
+  status varchar(20) [not null]
+}
+
+Table abonamenty {
+  id_abonamentu bigint [pk]
+  id_konta bigint [not null, ref: > konta_uzytkownikow.id_konta]
+  typ varchar(20) [not null]
+  czas_rozpoczecia timestamp [not null]
+  czas_zakonczenia timestamp [not null]
+  czas_anulowania timestamp
+}
+
+Table zgloszenia_usterek {
+  id_zgloszenia bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  czas_zgloszenia timestamp [not null]
+  typ_usterki varchar(50) [not null]
+  opis text
+  czy_zweryfikowane boolean [not null]
+  czy_potwierdzone boolean [not null]
+}
+
+Table transakcje {
+  id_transakcji bigint [pk]
+  id_konta bigint [not null, ref: > konta_uzytkownikow.id_konta]
+  id_wypozyczenia bigint [ref: > wypozyczenia.id_wypozyczenia]
+  kwota double [not null]
+  czas_rejestracji timestamp [not null]
+  typ varchar(20) [not null]
+}

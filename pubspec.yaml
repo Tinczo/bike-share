@@ -1,0 +1,50 @@
+name: bike_app
+description: "System Zarządzania Infrastrukturą Rowerową"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  get_it: ^9.2.0
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
+  dartz: ^0.10.1
+  dio: ^5.8.0
+  shared_preferences: ^2.5.4
+  internet_connection_checker_plus: ^2.7.2
+  bloc_concurrency: ^0.3.0
+  json_annotation: ^4.9.0
+  injectable: ^2.7.1+4
+  go_router: ^14.7.3
+  http: ^1.6.0
+  internet_connection_checker: ^3.0.1
+  flutter_secure_storage: ^10.0.0
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  logging: ^1.3.0
+  intl: ^0.20.2
+  mobile_scanner: ^7.1.4
+  permission_handler: ^12.0.1
+  geolocator: ^14.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  bloc_test: any
+  build_runner: ^2.10.4
+
+  flutter_lints: ^6.0.0
+  json_serializable: ^6.11.2
+  injectable_generator: ^2.6.0
+  mockito: ^5.6.3
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,96 @@
+@startuml
+skinparam linetype ortho
+skinparam dpi 200
+hide empty members
+
+entity "uzytkownicy" as uzytkownicy {
+  **PK: id_uzytkownika** : bigint NOT NULL
+}
+
+entity "platnosci" as platnosci {
+  **PK: id_platnosci** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_abonamentu** : bigint
+  typ_platnosci : varchar(30) NOT NULL
+  kwota : double precision NOT NULL
+  czas_zlecenia : timestamp NOT NULL
+  czas_zakonczenia : timestamp
+  status : varchar(20) NOT NULL
+  id_wypozyczenia : varchar(255)
+}
+
+entity "abonamenty" as abonamenty {
+  **PK: id_abonamentu** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  typ_abonamentu : varchar(30) NOT NULL
+  czas_rozpoczecia : timestamp NOT NULL
+  czas_zakonczenia : timestamp NOT NULL
+  automatyczne_odnowienie : boolean NOT NULL
+  cena : double precision NOT NULL
+}
+
+entity "faktury" as faktury {
+  **PK: id_faktury** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_platnosci** : bigint NOT NULL
+  numer_faktury : varchar(50) NOT NULL
+  kwota_netto : double precision NOT NULL
+  kwota_brutto : double precision NOT NULL
+  stawka_vat : double precision NOT NULL
+  czas_wystawienia : timestamp NOT NULL
+  czas_sprzedazy : timestamp NOT NULL
+  czas_zaplaty : timestamp
+  status : varchar(20) NOT NULL
+}
+
+entity "paragony" as paragony {
+  **PK: id_paragonu** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_platnosci** : bigint
+  numer_paragonu : varchar(50) NOT NULL
+  kwota : double precision NOT NULL
+  czas_wystawienia : timestamp NOT NULL
+}
+
+entity "kary" as kary {
+  **PK: id_kary** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_wypozyczenia** : bigint NOT NULL
+  **FK: id_faktury** : bigint
+  typ_kary : varchar(30) NOT NULL
+  kwota : double precision NOT NULL
+  czas_naliczenia : timestamp NOT NULL
+  status : varchar(20) NOT NULL
+  opis : text
+}
+
+entity "zwroty" as zwroty {
+  **PK: id_zwrotu** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_platnosci** : bigint NOT NULL
+  kwota : double precision NOT NULL
+  czas_zwrotu : timestamp NOT NULL
+  powod : text
+}
+
+' Relacje
+uzytkownicy ||--o{ platnosci : "id_uzytkownika"
+uzytkownicy ||--o{ abonamenty : "id_uzytkownika"
+uzytkownicy ||--o{ faktury : "id_uzytkownika"
+uzytkownicy ||--o{ paragony : "id_uzytkownika"
+uzytkownicy ||--o{ kary : "id_uzytkownika"
+uzytkownicy ||--o{ zwroty : "id_uzytkownika"
+
+abonamenty ||--o| platnosci : "id_abonamentu"
+platnosci ||--|| faktury : "id_platnosci"
+platnosci ||--o| paragony : "id_platnosci"
+platnosci ||--o{ zwroty : "id_platnosci"
+kary }o--o| faktury : "id_faktury"
+
+@enduml

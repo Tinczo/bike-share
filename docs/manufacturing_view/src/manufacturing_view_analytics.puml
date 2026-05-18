@@ -1,0 +1,55 @@
+@startuml
+allow_mixing
+package "Analytics Service (Python Project)" {
+    
+    folder "app" {
+        package "api (Routers)" {
+            class "ReportRouter" {
+                + get_pdf_report()
+                + get_heatmap()
+            }
+        }
+        
+        package "core (Business Logic)" {
+            class "ETLService" {
+                + extract_transform_load()
+            }
+            class "ReportGenerator" {
+                + generate_csv()
+                + generate_pdf()
+            }
+        }
+        
+        package "models (Pydantic/ORM)" {
+            class "RentalStatsModel"
+            class "HeatmapData"
+        }
+        
+        package "db (Data Access)" {
+            class "PostgresConnector"
+            class "ClickHouseConnector"
+        }
+        
+        package "consumers (Kafka)" {
+            class "EventConsumer" {
+                + consume_domain_events()
+            }
+        }
+    }
+    
+    file "requirements.txt"
+    file "Dockerfile"
+}
+
+"ReportRouter" --> "ReportGenerator"
+"EventConsumer" --> "ETLService"
+"ETLService" --> "models"
+"ETLService" --> "db" : Writes Aggregates
+"ReportRouter" --> "db" : Reads Data
+
+note right of "EventConsumer"
+  Subskrypcja wszystkich
+  zdarzeń domenowych
+end note
+
+@enduml

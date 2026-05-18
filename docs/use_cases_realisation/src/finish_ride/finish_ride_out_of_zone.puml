@@ -1,0 +1,59 @@
+@startuml
+title Zakończenie wypożyczenia: Zwrot roweru poza strefą
+
+skinparam sequence {
+    ArrowColor #2E86C1
+    LifeLineBorderColor #2E86C1
+    LifeLineBackgroundColor #A9CCE3
+    ParticipantBorderColor #2E86C1
+    ParticipantBackgroundColor White
+}
+
+entity "Rower (IoT)" as Bike
+participant "Serwis Floty" as Fleet
+participant "Szyna Zdarzeń\n(Kafka)" as Kafka
+participant "Serwis Wypożyczeń" as Rental
+participant "Serwis Płatności" as Payment
+database "Baza Floty (GIS)" as GeoDB
+
+Bike -> Fleet: Telemetria {locked: true, gps: [51.1, 17.0]}
+activate Fleet
+
+group Weryfikacja Lokalizacji (Geofencing)
+    Fleet -> GeoDB: Sprawdź czy punkt w strefie stacji?
+    GeoDB --> Fleet: False (Poza stacją)
+    
+    Fleet -> GeoDB: Sprawdź czy w strefie operacyjnej miasta?
+    GeoDB --> Fleet: True (W mieście, ale nie na stacji)
+    
+    Fleet -> Kafka: Publish Event: BikeLocked\n{bikeId, locationType: OUTSIDE_STATION}
+end
+deactivate Fleet
+
+group Logika Biznesowa - Naliczenie Opłat
+    Kafka -> Rental: Consume: BikeLocked
+    activate Rental
+    
+    Rental -> Rental: Oblicz czas przejazdu (np. 15 min = 2.00 PLN)
+    
+    alt Typ lokalizacji == OUTSIDE_STATION
+        Rental -> Rental: Dolicz opłatę dodatkową (KARA)\n+10.00 PLN
+    end
+    
+    note right of Rental
+      Całkowity koszt: 12.00 PLN
+    end note
+    
+    Rental -> Rental: Zamknij wypożyczenie
+    Rental -> Kafka: Publish Event: RentalEnded\n{userId, amount: 12.00, feeType: PENALTY}
+    deactivate Rental
+end
+
+group Rozliczenie
+    Kafka -> Payment: Consume: RentalEnded
+    activate Payment
+    Payment -> Payment: Pobierz 12.00 PLN z salda/karty
+    deactivate Payment
+end
+
+@enduml

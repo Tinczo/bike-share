@@ -1,0 +1,30 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 180
+skinparam ranksep 120
+
+
+title Diagram Komponentów - Domena Wypożyczeń
+
+    Container(api_gateway, "API Gateway", "Spring Cloud", "Punkt wejścia HTTP")
+    ContainerQueue(message_bus, "Szyna Zdarzeń", "Kafka", "Integracja asynchroniczna")
+    ContainerDb(cache, "Cache", "Redis", "Odczyt cenników")
+
+' --- WNĘTRZE DOMENY ---
+Container_Boundary(domain, "Domena Wypożyczeń") {
+    Component(rental_service, "Serwis Wypożyczeń", "Java/Spring Boot", "Zarządzanie procesem wynajmu, rezerwacje, taryfikacja")
+    ComponentDb(rental_db, "Baza Wypożyczeń", "PostgreSQL", "Historia wypożyczeń, aktywne rezerwacje")
+}
+
+' --- RELACJE ---
+Rel(api_gateway, rental_service, "Start/Stop wynajmu", "REST")
+
+Rel(rental_service, rental_db, "R/W", "JDBC")
+Rel(rental_service, cache, "Read (Cennik)", "TCP")
+
+Rel_R(rental_service, message_bus, "Pub: Rozpoczęto wynajem", "TCP")
+Rel_R(message_bus, rental_service, "Sub: Potwierdzenie płatności", "TCP")
+
+@enduml

@@ -1,0 +1,74 @@
+@startuml
+title Wypożyczenie: scenariusz główny
+
+skinparam sequence {
+    ArrowColor #2E86C1
+    LifeLineBorderColor #2E86C1
+    LifeLineBackgroundColor #A9CCE3
+    ParticipantBorderColor #2E86C1
+    ParticipantBackgroundColor White
+}
+
+actor "Użytkownik Mobilny" as User
+participant "Aplikacja Mobilna" as App
+participant "API Gateway" as Gateway
+participant "Serwis Wypożyczeń\n(Rental Service)" as Rental
+participant "Cache\n(Redis)" as Redis
+participant "Serwis Płatności\n(Payment Service)" as Payment
+participant "Szyna Zdarzeń\n(Kafka)" as Kafka
+participant "Serwis Floty\n(Fleet Service)" as Fleet
+participant "MQTT Broker\n(Mosquitto)" as MQTT
+entity "Rower (IoT)" as Bike
+
+User -> App: Zeskanuj kod QR (Start)
+activate App
+App -> Gateway: POST /rentals/start {bikeId}
+activate Gateway
+
+Gateway -> Rental: Przekaż żądanie (z tokenem JWT)
+activate Rental
+
+group Walidacja i Blokada Środków (Saga Step 1)
+    Rental -> Redis: Sprawdź status roweru (GET bike:{id})
+    activate Redis
+    Redis --> Rental: Status: DOSTĘPNY
+    deactivate Redis
+    
+    Rental -> Payment: Zablokuj środki (Pre-auth)
+    activate Payment
+    Payment --> Rental: Potwierdzenie blokady
+    deactivate Payment
+end
+
+group Odblokowanie Roweru (Saga Step 2)
+    Rental -> Fleet: Komenda: Odblokuj (RPC/REST)
+    activate Fleet
+    Fleet -> MQTT: Publish cmd/unlock {bikeId}
+    activate MQTT
+    MQTT -> Bike: Sygnał otwarcia zamka
+    activate Bike
+    Bike --> Bike: Otwarcie blokady
+    Bike -> MQTT: Publish status/locked = false
+    deactivate Bike
+    MQTT --> Fleet: Potwierdzenie zmiany stanu
+    deactivate MQTT
+    Fleet --> Rental: Rower odblokowany
+    deactivate Fleet
+end
+
+group Finalizacja
+    Rental -> Rental: Utwórz rekord wypożyczenia (PostgreSQL)
+    Rental -> Kafka: Publish Event: RentalStarted
+    activate Kafka
+    Kafka -->> Payment: (Async) Aktualizacja stanu
+    deactivate Kafka
+    Rental --> Gateway: 200 OK (Rental ID)
+    deactivate Rental
+end
+
+Gateway --> App: Potwierdzenie rozpoczęcia
+deactivate Gateway
+App --> User: Wyświetl licznik czasu
+deactivate App
+
+@enduml

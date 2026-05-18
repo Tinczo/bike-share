@@ -1,0 +1,84 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam linetype ortho
+' Zwiększamy odstępy, żeby strzałki miały miejsce na zakręty
+skinparam nodesep 100
+skinparam ranksep 80
+
+title Widok Funkcjonalny - Architektura Domenowa
+
+' --- AKTORZY (GÓRA) ---
+Person(user, "Użytkownik Mobilny")
+Person(operator, "Operator Systemu")
+
+' --- SYSTEM GŁÓWNY ---
+System_Boundary(c1, "System Zarządzania Infrastrukturą Rowerową") {
+
+    ' --- WARSTWA DOSTĘPOWA ---
+    Container(lb, "Load Balancer", "Nginx", "Dystrybucja ruchu")
+    Container(api_gateway, "API Gateway", "Spring Cloud Gateway", "Autoryzacja, Routing")
+    
+    ' --- INFRASTRUKTURA WSPÓLNA ---
+    ContainerDb(cache, "Cache Rozproszony", "Redis Cluster", "Dane współdzielone (Sesje, Cenniki)")
+    ContainerQueue(message_bus, "Szyna Zdarzeń", "Kafka", "Komunikacja asynchroniczna")
+
+    ' --- INTERFEJSY ---
+    Container(mobile_app, "Aplikacja Mobilna", "Flutter")
+    Container(web_app, "Panel Operatora", "Angular")
+
+    ' --- DOMENY ---
+    Container(d_fleet, "Monitoringu Floty", "Moduł", "Obsługa IoT, Geofencing, Lokalizacja")
+    Container(d_rental, "Wypożyczeń", "Moduł", "Logika wynajmu, Rezerwacje")
+    Container(d_analytics, "Analityki", "Moduł", "Raporty, Statystyki")
+    Container(d_payment, "Płatności", "Moduł", "Portfele, Transakcje")
+}
+
+' --- SYSTEMY ZEWNĘTRZNE (DÓŁ) ---
+' Definiujemy je PO boundary, żeby Graphviz domyślnie próbował dać je niżej
+System_Ext(iot_device, "Rower / Stacja (IoT)", "Moduł GPS")
+System_Ext(payment_gw, "Bramka Płatności", "BLIK / Stripe")
+
+
+' --- RELACJE ---
+
+' Aplikacje -> LB -> Gateway
+Rel(user, mobile_app, "HTTPS")
+Rel(operator, web_app, "HTTPS")
+Rel(mobile_app, lb, "HTTPS")
+Rel(web_app, lb, "HTTPS")
+Rel(lb, api_gateway, "HTTP")
+
+' Gateway -> Domeny
+Rel(api_gateway, d_rental, "REST")
+Rel_D(api_gateway, d_fleet, "REST")
+Rel(api_gateway, d_payment, "REST")
+Rel(api_gateway, d_analytics, "REST")
+
+' Domeny -> Cache
+Rel_R(d_fleet, cache, "R/W (Lokalizacje)")
+Rel(d_rental, cache, "R (Cenniki)")
+Rel(api_gateway, cache, "R (Sesje)")
+
+' Domeny -> Szyna Zdarzeń
+Rel(d_rental, message_bus, "Pub/Sub")
+Rel(d_fleet, message_bus, "Pub")
+Rel(d_payment, message_bus, "Sub")
+Rel(d_analytics, message_bus, "Sub")
+
+
+' --- RELACJE Z SYSTEMAMI ZEWNĘTRZNYMI (ZMUSZENIE DO BYCIA NA DOLE) ---
+
+Rel_U(iot_device, d_fleet, "MQTT/TLS")
+
+Rel_D(d_payment, payment_gw, "API")
+
+Lay_D(d_fleet, iot_device)
+Lay_D(message_bus, iot_device)
+Lay_D(cache, iot_device)
+
+Lay_D(d_payment, payment_gw)
+Lay_D(message_bus, payment_gw)
+Lay_D(cache, payment_gw)
+
+@enduml

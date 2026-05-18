@@ -1,0 +1,111 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam dpi 200
+hide empty members
+
+entity "uzytkownicy" as uzytkownicy {
+  **PK: id_uzytkownika** : bigint NOT NULL
+  --
+  email : varchar(255) NOT NULL
+  skrot_hasla : varchar(255) NOT NULL
+}
+
+entity "konta_uzytkownikow" as konta {
+  **PK: id_konta** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  saldo : double precision NOT NULL
+  status : varchar(20) NOT NULL
+  ma_podpieta_karte : boolean NOT NULL
+  data_utworzenia : timestamp NOT NULL
+  data_aktualizacji : timestamp NOT NULL
+  ostatnie_logowanie : timestamp
+}
+
+entity "rowery" as rowery {
+  **PK: id_roweru** : bigint NOT NULL
+  --
+  kod_qr : varchar(100) NOT NULL
+  status : varchar(30) NOT NULL
+  lokalizacja_dlugosc : double precision
+  lokalizacja_szerokosc : double precision
+  **FK: id_stacji** : bigint
+}
+
+entity "stacje" as stacje {
+  **PK: id_stacji** : bigint NOT NULL
+  --
+  nazwa : varchar(200) NOT NULL
+  lokalizacja_dlugosc : double precision NOT NULL
+  lokalizacja_szerokosc : double precision NOT NULL
+  pojemnosc : int NOT NULL
+}
+
+entity "wypozyczenia" as wypozyczenia {
+  **PK: id_wypozyczenia** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_roweru** : bigint NOT NULL
+  czas_rozpoczecia : timestamp NOT NULL
+  czas_zakonczenia : timestamp
+  koszt : double precision
+  status : varchar(20) NOT NULL
+}
+
+entity "rezerwacje" as rezerwacje {
+  **PK: id_rezerwacji** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_roweru** : bigint NOT NULL
+  czas_utworzenia : timestamp NOT NULL
+  czas_wygasniecia : timestamp NOT NULL
+  status : varchar(20) NOT NULL
+}
+
+entity "abonamenty" as abonamenty {
+  **PK: id_abonamentu** : bigint NOT NULL
+  --
+  **FK: id_konta** : bigint NOT NULL
+  typ : varchar(20) NOT NULL
+  czas_rozpoczecia : timestamp NOT NULL
+  czas_zakonczenia : timestamp NOT NULL
+  czas_anulowania : timestamp
+}
+
+entity "zgloszenia_usterek" as zgloszenia {
+  **PK: id_zgloszenia** : bigint NOT NULL
+  --
+  **FK: id_uzytkownika** : bigint NOT NULL
+  **FK: id_roweru** : bigint NOT NULL
+  czas_zgloszenia : timestamp NOT NULL
+  typ_usterki : varchar(50) NOT NULL
+  opis : text
+  czy_zweryfikowane : boolean NOT NULL
+  czy_potwierdzone : boolean NOT NULL
+}
+
+entity "transakcje" as transakcje {
+  **PK: id_transakcji** : bigint NOT NULL
+  --
+  **FK: id_konta** : bigint NOT NULL
+  **FK: id_wypozyczenia** : bigint
+  kwota : double precision NOT NULL
+  czas_rejestracji : timestamp NOT NULL
+  typ : varchar(20) NOT NULL
+}
+
+' Relacje
+uzytkownicy ||--|| konta : "id_uzytkownika"
+konta ||--o{ abonamenty : "id_konta"
+konta ||--o{ transakcje : "id_konta"
+uzytkownicy ||--o{ wypozyczenia : "id_uzytkownika"
+uzytkownicy ||--o{ rezerwacje : "id_uzytkownika"
+uzytkownicy ||--o{ zgloszenia : "id_uzytkownika"
+rowery ||--o{ wypozyczenia : "id_roweru"
+rowery ||--o{ rezerwacje : "id_roweru"
+rowery ||--o{ zgloszenia : "id_roweru"
+rowery }o--o| stacje : "id_stacji"
+wypozyczenia ||--o| transakcje : "id_wypozyczenia"
+
+@enduml

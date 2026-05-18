@@ -1,0 +1,189 @@
+@startuml
+
+' Styl UML
+skinparam componentStyle uml2
+skinparam linetype ortho
+
+' Ustawienia odstępów - zwiększone nodesep aby pomieścić więcej baz danych obok siebie
+skinparam nodesep 50
+skinparam ranksep 80
+
+' --- DEFINICJE KOLORÓW DLA PROTOKOŁÓW ---
+!define HTTPS_COLOR #0066CC
+!define HTTP_COLOR #00AA00
+!define MQTT_COLOR #9933FF
+!define TCP_COLOR #FF9900
+!define JDBC_COLOR #CC0000
+!define STREAM_COLOR #FF3366
+
+title Widok Rozmieszczenia (UML Deployment) - Architektura Domenowa AWS
+
+' --- KLIENCI ---
+node "Smartfon Użytkownika\n<<device: iOS/Android>>" as smartphone {
+    artifact "Aplikacja Mobilna\n<<artifact: Flutter>>" as mobile_app
+}
+node "Komputer Operatora\n<<device: PC/Mac>>" as pc {
+    node "Przeglądarka WWW" {
+        artifact "Panel Operatora\n<<artifact: Flutter Web>>" as web_app
+    }
+}
+
+' --- IoT (Rower) ---
+node "Rower Miejski\n<<device>>" as bike {
+    node "Kontroler IoT (ESP32/STM32)\n<<device>>\n[CPU: 240 MHz, RAM: 512 KB]" as mcu {
+        artifact "Firmware\n<<artifact: C++>>" as firmware
+    }
+}
+
+' --- CHMURA AWS ---
+cloud "AWS Cloud (Region: eu-central-1)" {
+    
+    ' Hosting Frontendu
+    node "Frontend Hosting\n<<service>>" {
+        node "AWS S3" as s3_node {
+             artifact "Web App Assets\n(HTML/JS/WASM)" as web_assets
+        }
+    }
+
+    card "VPC (10.0.0.0/16)\n<<executionEnvironment>>" as vpc {
+        
+        ' 1. WARSTWA PUBLICZNA
+        card "Public Subnet" as pub_sub {
+            node "AWS ALB (Load Balancer)\n<<infrastructure>>" as alb_node {
+                label "Throughput: Auto-scaling"
+            }
+        }
+
+        ' 2. WARSTWA APLIKACJI
+        card "Private App Subnet" as private_sub {
+            
+            card "ECS Fargate Cluster\n<<executionEnvironment>>" as ecs {
+                
+                ' --- KOMPONENTY WSPÓLNE ---
+                node "Container: API Gateway\n[vCPU: 2, RAM: 4 GB]" as gateway_node {
+                    artifact "gateway.jar"
+                }
+                
+                node "Container: Internal LB\n[vCPU: 1, RAM: 2 GB]" as lb_node {
+                    artifact "nginx.conf"
+                }
+                
+                queue "Container: MQTT Broker\n[vCPU: 2, RAM: 4 GB]" as mqtt_node {
+                    artifact "mosquitto"
+                }
+
+                ' --- MIKROSERWISY DOMENOWE ---
+                node "Container: Serwis Analityczny\n[vCPU: 2, RAM: 8 GB]" as analytics_node {
+                    artifact "analytics-service.py"
+                }
+                
+                node "Container: Serwis Floty\n[vCPU: 4, RAM: 8 GB]" as fleet_node {
+                    artifact "fleet-service.jar"
+                }
+
+                node "Container: Serwis Wypożyczeń\n[vCPU: 2, RAM: 4 GB]" as rental_node {
+                    artifact "rental-service.jar"
+                }
+                
+                node "Container: Serwis Płatności\n[vCPU: 2, RAM: 4 GB]" as payment_node {
+                    artifact "payment-service.jar"
+                }
+                
+                ' Kafka
+                queue "Container: Kafka Cluster\n[vCPU: 4, RAM: 16 GB]" as kafka_node {
+                    artifact "kafka-broker"
+                }
+            }
+        }
+        
+        ' 3. WARSTWA DANYCH (Database per Service)
+        card "Private Data Subnet" as data_subnet {
+            
+            ' Baza Analityczna
+            database "Data Warehouse (PostgreSQL)\n(AWS RDS)\n<<service>>\n[db.m5.large, 500GB SSD]" as db_analytics {
+                artifact "Analytics Schema"
+            }
+
+            ' Bazy Floty
+            database "Fleet DB (PostGIS)\n(AWS RDS)\n<<service>>\n[db.m5.large, 100GB SSD]" as db_fleet {
+                artifact "Fleet Schema"
+            }
+            node "EC2 Instance (InfluxDB)\n<<device: Linux>>\n[m5.large, 500GB EBS]" as influx_node {
+                database "Telemetry DB"
+            }
+
+            ' Baza Wypożyczeń
+            database "Rental DB (PostgreSQL)\n(AWS RDS)\n<<service>>\n[db.m5.large, 100GB SSD]" as db_rental {
+                artifact "Rental Schema"
+            }
+
+            ' Baza Płatności
+            database "Payment DB (PostgreSQL)\n(AWS RDS)\n<<service>>\n[db.m5.large, 100GB SSD]" as db_payment {
+                artifact "Payment Schema"
+            }
+
+            ' Cache Współdzielony
+            database "AWS ElastiCache (Redis)\n<<service>>\n[cache.t3.medium]" as redis_node {
+                artifact "Shared Cache"
+            }
+        }
+    }
+}
+
+' SYSTEMY ZEWNĘTRZNE
+cloud "Bramka Płatności\n(Stripe/API)" as payment_gw
+
+
+' --- WYMUSZENIE UKŁADU (ANCHORING) ---
+' To kluczowe, aby bazy były pod odpowiednimi serwisami
+
+ecs -[hidden]down-> data_subnet
+kafka_node -[hidden]down- data_subnet
+
+
+
+' --- POŁĄCZENIA ---
+
+' Klient -> Public
+smartphone -[HTTPS_COLOR]-> alb_node : HTTPS
+pc -[HTTPS_COLOR]-> alb_node : HTTPS
+pc .[HTTPS_COLOR].> s3_node : HTTPS
+mcu -[MQTT_COLOR]-> alb_node : MQTT (8883)
+
+' Public -> App
+alb_node -[HTTP_COLOR]-> gateway_node : HTTP
+alb_node -[TCP_COLOR]-> mqtt_node : TCP
+
+' Wewnątrz App (Routing)
+gateway_node -[HTTP_COLOR]-> lb_node : HTTP
+
+lb_node -[HTTP_COLOR]-> analytics_node : HTTP
+lb_node -[HTTP_COLOR]-> fleet_node : HTTP
+lb_node -[HTTP_COLOR]-> rental_node : HTTP
+lb_node -[HTTP_COLOR]-> payment_node : HTTP
+
+mqtt_node -[STREAM_COLOR]-> fleet_node : Stream
+
+' App -> Data (Database per Service)
+
+' 1. Analityka
+analytics_node .[JDBC_COLOR].> db_analytics : JDBC
+analytics_node .[HTTP_COLOR].> influx_node : HTTP (Read)
+
+' 2. Flota
+fleet_node .[JDBC_COLOR].> db_fleet : JDBC
+fleet_node .[HTTP_COLOR].> influx_node : HTTP (Write)
+fleet_node .[TCP_COLOR].> redis_node : TCP (Update)
+fleet_node .[TCP_COLOR].> kafka_node : TCP
+
+' 3. Wypożyczenia
+rental_node .[JDBC_COLOR].> db_rental : JDBC
+rental_node .[TCP_COLOR].> redis_node : TCP (Read)
+rental_node .[TCP_COLOR].> kafka_node : TCP
+
+' 4. Płatności
+payment_node .[JDBC_COLOR].> db_payment : JDBC
+payment_node .[TCP_COLOR].> kafka_node : TCP
+payment_node .[HTTPS_COLOR].> payment_gw : HTTPS
+
+@enduml

@@ -1,0 +1,55 @@
+@startuml
+title Przypadek użycia: Błąd otwarcia zamka (Transakcja Kompensacyjna)
+
+skinparam sequence {
+    ArrowColor #2E86C1
+    LifeLineBorderColor #2E86C1
+    LifeLineBackgroundColor #A9CCE3
+    ParticipantBorderColor #2E86C1
+    ParticipantBackgroundColor White
+}
+
+
+actor "Użytkownik" as User
+participant "Aplikacja" as App
+participant "Serwis Wypożyczeń" as Rental
+participant "Serwis Płatności" as Payment
+participant "Serwis Floty" as Fleet
+participant "MQTT Broker" as MQTT
+entity "Rower (IoT)" as Bike
+
+User -> App: Wypożycz
+App -> Rental: POST /rentals/start
+
+' Krok 1 Sagi - Sukces
+Rental -> Payment: Zablokuj środki (Pre-auth)
+Payment --> Rental: OK (Blokada ID: 123)
+
+' Krok 2 Sagi - Próba otwarcia
+Rental -> Fleet: Komenda: Odblokuj
+activate Fleet
+Fleet -> MQTT: Publish cmd/unlock
+MQTT -> Bike: Sygnał...
+activate Bike
+Bike --x MQTT: (Brak odpowiedzi / Timeout / Error)
+destroy Bike
+
+Fleet -> Fleet: Wykryto Timeout (np. 10s)
+Fleet --> Rental: 504 Gateway Timeout (Błąd IoT)
+deactivate Fleet
+
+group Kompensacja (Rollback)
+    note right of Rental
+      Rower się nie otworzył,
+      musimy zwrócić/odblokować środki
+    end note
+    Rental -> Payment: Zwolnij blokadę (Blokada ID: 123)
+    activate Payment
+    Payment --> Rental: OK (Środki zwolnione)
+    deactivate Payment
+end
+
+Rental --> App: Błąd: Nie udało się otworzyć roweru. Spróbuj ponownie.
+App --> User: Komunikat błędu (Środki nie zostały pobrane)
+
+@enduml

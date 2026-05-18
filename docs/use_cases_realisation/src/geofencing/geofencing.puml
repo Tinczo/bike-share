@@ -1,0 +1,58 @@
+@startuml
+title Geofencing: scenariusz główny
+skinparam sequence {
+    ArrowColor #2E86C1
+    LifeLineBorderColor #2E86C1
+    LifeLineBackgroundColor #A9CCE3
+    ParticipantBorderColor #2E86C1
+    ParticipantBackgroundColor White
+}
+
+
+entity "Flota Rowerów\n(10k urządzeń)" as IoT
+participant "MQTT Broker" as MQTT
+participant "Serwis Floty\n(Fleet Service)" as Fleet
+database "InfluxDB\n(Telemetry)" as Influx
+database "Redis Cluster\n(Live Map)" as Redis
+participant "Szyna Zdarzeń\n(Kafka)" as Kafka
+
+group Pętla Telemetryczna (Co 1 min)
+    IoT ->> MQTT: Publish telemetry/gps {lat, lon, bat}
+    activate MQTT
+    MQTT ->> Fleet: Strumień danych (Stream)
+    deactivate MQTT
+    activate Fleet
+
+    par Zapis Równoległy
+        Fleet -> Influx: Zapisz punkt czasowy (Logi GPS)
+    else Aktualizacja Cache (Szybki odczyt)
+        Fleet -> Redis: GEOADD bikes_locations {lat, lon, id}
+        Fleet -> Redis: SET bike_status:{id} {battery, range}
+    else Geofencing Check
+        Fleet -> Fleet: Sprawdź czy w strefie?
+        alt Poza strefą
+            Fleet -> Kafka: Publish Event: ZoneViolation
+        end
+    end
+    deactivate Fleet
+end
+
+group Odczyt przez Aplikację
+    actor "Użytkownik" as User
+    participant "API Gateway" as Gateway
+    
+    User -> Gateway: GET /map/bikes
+    activate Gateway
+    Gateway -> Fleet: GetAvailableBikes()
+    activate Fleet
+    Fleet -> Redis: GEORADIUS (Pobierz z pamięci)
+    activate Redis
+    Redis --> Fleet: Lista rowerów (JSON)
+    deactivate Redis
+    Fleet --> Gateway: Lista rowerów
+    deactivate Fleet
+    Gateway --> User: Mapa z rowerami
+    deactivate Gateway
+end
+
+@enduml

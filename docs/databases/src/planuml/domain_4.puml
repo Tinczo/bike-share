@@ -1,0 +1,106 @@
+@startuml
+skinparam linetype ortho
+skinparam dpi 200
+
+entity "fakt_przejazdu" as fakt {
+  **PK: id_przejazdu** : bigint NOT NULL
+  --
+  **FK: id_czasu_rozpoczecia** : bigint NOT NULL
+  **FK: id_czasu_zakonczenia** : bigint NOT NULL
+  **FK: id_lokalizacji_start** : bigint NOT NULL
+  **FK: id_lokalizacji_koniec** : bigint NOT NULL
+  czas_rozpoczecia : timestamp NOT NULL
+  czas_zakonczenia : timestamp NOT NULL
+  czas_trwania_sekundy : int NOT NULL
+  przebyte_metry : int NOT NULL
+  koszt : double precision NOT NULL
+  typ_rozliczenia : varchar(20) NOT NULL
+}
+
+entity "wymiar_czasu" as czas {
+  **PK: id_czasu** : bigint NOT NULL
+  --
+  czas : timestamp NOT NULL
+  godzina : int NOT NULL
+  minuta : int NOT NULL
+  sekunda : int NOT NULL
+  dzien_tygodnia : varchar(20) NOT NULL
+  dzien_miesiaca : int NOT NULL
+  miesiac : int NOT NULL
+  rok : int NOT NULL
+  pora_dnia : varchar(30) NOT NULL
+  czy_dzien_roboczy : boolean NOT NULL
+  czy_weekend : boolean NOT NULL
+}
+
+entity "wymiar_lokalizacji" as lokalizacja {
+  **PK: id_lokalizacji** : bigint NOT NULL
+  --
+  dokladna_lokalizacja_dlugosc : double precision NOT NULL
+  dokladna_lokalizacja_szerokosc : double precision NOT NULL
+  id_strefy : varchar(100)
+  nazwa_strefy : varchar(200)
+  miasto_strefy : varchar(100) NOT NULL
+  id_stacji : varchar(100)
+  nazwa_stacji : varchar(200)
+}
+
+entity "raporty_analityczne" as raporty {
+  **PK: id_raportu** : bigint NOT NULL
+  --
+  nazwa_raportu : varchar(200) NOT NULL
+  typ_raportu : varchar(30) NOT NULL
+  zakres_od : timestamp NOT NULL
+  zakres_do : timestamp NOT NULL
+  czas_wygenerowania : timestamp NOT NULL
+  tresc_binarna : bytea NOT NULL
+  format : varchar(10) NOT NULL
+  sciezka_pliku : varchar(500)
+  rozmiar_bajty : bigint
+}
+
+entity "predykcje_popytu" as predykcje {
+  **PK: id_predykcji** : bigint NOT NULL
+  --
+  **FK: id_lokalizacji** : bigint NOT NULL
+  **FK: id_czasu** : bigint NOT NULL
+  czas_predykcji : timestamp NOT NULL
+  przewidywana_liczba_rowerow : int NOT NULL
+  poziom_pewnosci : double precision
+  dolny_przedzial_ufnosci : int
+  gorny_przedzial_ufnosci : int
+  nazwa_modelu : varchar(100)
+}
+
+entity "rekomendacje_lokalizacji" as rekomendacje {
+  **PK: id_rekomendacji** : bigint NOT NULL
+  --
+  data_utworzenia : timestamp NOT NULL
+  proponowana_lokalizacja_dlugosc : double precision NOT NULL
+  proponowana_lokalizacja_szerokosc : double precision NOT NULL
+  wynik_oceny : double precision NOT NULL
+  uzasadnienie : text
+  typ_rekomendacji : varchar(50)
+  status : varchar(30)
+}
+
+entity "raporty_fakty" as raporty_fakty {
+  **FK: id_raportu** : bigint NOT NULL
+  **FK: id_przejazdu** : bigint NOT NULL
+}
+
+' Relacje - Fakty
+fakt }o--|| czas : "id_czasu_rozpoczecia"
+fakt }o--|| czas : "id_czasu_zakonczenia"
+fakt }o--|| lokalizacja : "id_lokalizacji_start"
+fakt }o--|| lokalizacja : "id_lokalizacji_koniec"
+
+' Relacje - Predykcje
+predykcje }o--|| lokalizacja : "id_lokalizacji"
+predykcje }o--|| czas : "id_czasu"
+
+' Relacje - Raporty (many-to-many z faktami)
+raporty ||--o{ raporty_fakty : "id_raportu"
+fakt ||--o{ raporty_fakty : "id_przejazdu"
+
+@enduml

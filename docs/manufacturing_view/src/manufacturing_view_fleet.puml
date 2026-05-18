@@ -1,0 +1,79 @@
+@startuml
+package "Fleet Service (Java/Spring Boot)" {
+
+    package "interfaces" {
+        package "rest_api" {
+            class "FleetController" {
+                + getBikeLocation()
+            }
+        }
+        package "iot_handlers" {
+            class "MqttMessageHandler" {
+                + handleTelemetry()
+                + handleStatusChange()
+            }
+        }
+    }
+
+    package "domain (Core Logic)" {
+        class "GeofencingService" {
+            + checkZones(lat, lon)
+        }
+        class "BikeStatusService" {
+            + processLocationUpdate()
+        }
+    }
+
+    package "infrastructure" {
+        
+        package "cache (Redis)" {
+            class "LiveMapRepository" {
+                + updateBikePosition(bikeId, lat, lon)
+                + getBikePosition(bikeId)
+            }
+            class "RedisConfig"
+        }
+
+        package "persistence_sql (PostgreSQL)" {
+            class "BikeRepository"
+            class "ZoneRepository"
+        }
+        
+        package "persistence_ts (InfluxDB)" {
+            class "TelemetryRepository" {
+                + saveMetrics()
+            }
+        }
+        
+        package "messaging (Kafka)" {
+            class "FleetEventProducer" {
+                + publishOutOfZone()
+            }
+        }
+    }
+}
+
+' Relacje
+"MqttMessageHandler" --> "BikeStatusService" : Stream Data
+"MqttMessageHandler" --> "GeofencingService"
+
+"BikeStatusService" --> "LiveMapRepository" : Szybki Update (Live Map)
+"BikeStatusService" --> "TelemetryRepository" : Archiwizacja (InfluxDB)
+"BikeStatusService" --> "BikeRepository" : Persystencja stanu (SQL)
+
+"GeofencingService" --> "ZoneRepository"
+"GeofencingService" --> "FleetEventProducer" : Alerty (Kafka)
+
+"LiveMapRepository" ..> "RedisConfig" : uses
+
+note right of "LiveMapRepository"
+  Aktualizacja "Live Map" w Redis
+  (Dostęp milisekundowy dla App)
+end note
+
+note top of "iot_handlers"
+  Obsługa strumienia MQTT
+  z urządzeń
+end note
+
+@enduml

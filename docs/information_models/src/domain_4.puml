@@ -1,0 +1,107 @@
+@startuml domain_4
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam dpi 200
+hide empty members
+
+class Lokalizacja <<dataType>>{
+    dlugosc: Real
+    szerokosc: Real
+}
+
+enum TypRozliczenia {
+    ABONAMENT
+    JEDNORAZOWE
+}
+
+enum TypRaportu {
+    TYGODNIOWY
+    MIESIECZNY
+    KWARTALNY
+}
+
+enum FormatEksportu {
+    PDF
+    CSV
+    XLSX
+}
+
+enum PoraDnia {
+    RANO_SZCZYT_KOMUNIKACYJNY
+    POZA_SZCZYTEM
+    POPOLUDNIE_SZCZYT_KOMUNIKACYJNY
+    WIECZOR
+    NOC
+}
+
+class FaktPrzejazdu {
+    id_przejazdu: String [1]
+    czas_rozpoczecia: String [1]
+    czas_zakonczenia: String [1]
+    czas_trwania_sekundy: Integer [1]
+    przebyte_metry: Integer [1]
+    koszt: Real [1]
+    typ_rozliczenia: TypRozliczenia [1]
+}
+
+class WymiarCzasu {
+    id_czasu: String [1]
+    czas: String [1]
+    godzina: Integer [1]
+    minuta: Integer [1]
+    sekunda: Integer [1]
+    dzien_tygodnia: String [1]
+    dzien_miesiaca: Integer [1]
+    miesiac: Integer [1]
+    rok: Integer [1]
+    pora_dnia: PoraDnia [1]
+    czy_dzien_roboczy: Boolean [1]
+    czy_weekend: Boolean [1]
+}
+
+class WymiarLokalizacji {
+    id_lokalizacji: String [1]
+    dokladna_lokalizacja: Lokalizacja [1]
+    id_strefy: String [0..1]
+    nazwa_strefy: String [1]
+    miasto_strefy: String [1]
+    id_stacji: String [0..1]
+    nazwa_stacji: String [0..1]
+}
+
+class RaportAnalityczny {
+    id_raportu: String [1]
+    typ_raportu: TypRaportu [1]
+    zakres_od: String [1]
+    zakres_do: String [1]
+    czas_wygenerowania: String [1]
+    tresc_binarna: Blob [1]
+    format: FormatEksportu [1]
+}
+
+class PredykcjaPopytu {
+    id_predykcji: String [1]
+    czas_predykcji: String [1]
+    przewidywana_liczba_rowerow: Integer [1]
+    /poziom_pewnosci: Real [0..1]
+}
+
+class RekomendacjaLokalizacji {
+    id_rekomendacji: String [1]
+    proponowana_lokalizacja: Lokalizacja [1]
+    wynik_oceny: Real [1]
+    uzasadnienie: String [0..1]
+}
+
+FaktPrzejazdu "0..*" -up- "1" WymiarCzasu : (rozpoczety_o) >
+FaktPrzejazdu "0..*" -up- "1" WymiarCzasu : (zakonczony_o) >
+FaktPrzejazdu "0..*" -down- "1" WymiarLokalizacji : (rozpoczety_w) >
+FaktPrzejazdu "0..*" -down- "1" WymiarLokalizacji : (zakonczony_w) >
+
+RaportAnalityczny "1" -- "0..*" FaktPrzejazdu : generowany na podstawie >
+
+PredykcjaPopytu "0..*" - "1" WymiarLokalizacji : dotyczy >
+PredykcjaPopytu "0..*" - "1" WymiarCzasu : dotyczy >
+
+@enduml

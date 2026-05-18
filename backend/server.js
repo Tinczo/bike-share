@@ -1,0 +1,50 @@
+const app = require('./src/app');
+
+const PORT = process.env.PORT || 3000;
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`Mock backend server running on http://localhost:${PORT}`);
+  console.log(`Also accessible via http://0.0.0.0:${PORT}`);
+  console.log(`${'='.repeat(60)}\n`);
+  console.log('Available endpoints:');
+  console.log('  GET  /api/health');
+  console.log('');
+  console.log('  Auth:');
+  console.log('  POST /api/auth/login');
+  console.log('  POST /api/auth/register');
+  console.log('');
+  console.log('  Map:');
+  console.log('  GET  /api/map/bikes?lat={lat}&lng={lng}&radius={km}');
+  console.log('  GET  /api/map/stations');
+  console.log('');
+  console.log('  Wallet:');
+  console.log('  GET  /api/wallet');
+  console.log('  GET  /api/wallet/transactions');
+  console.log('  POST /api/wallet/topup');
+  console.log('  GET  /api/wallet/payment-methods');
+  console.log('  POST /api/wallet/payment-methods');
+  console.log('');
+  console.log('  Rental:');
+  console.log('  GET  /api/rental/eligibility');
+  console.log('  POST /api/rental/start');
+  console.log('  GET  /api/rental/active');
+  console.log('  POST /api/rental/:id/pause');
+  console.log('  POST /api/rental/:id/end');
+  console.log('  POST /api/rental/reservation');
+  console.log('  GET  /api/rental/reservation/active');
+  console.log('  DELETE /api/rental/reservation/:id');
+  console.log('');
+  console.log('  History:');
+  console.log('  GET  /api/history/rentals');
+  console.log('  GET  /api/history/faults');
+  console.log('');
+  console.log('  Faults:');
+  console.log('  POST /api/faults/report');
+  console.log('');
+  console.log('Test user:');
+  console.log('  Email: test@example.com');
+  console.log('  Password: password123');
+  console.log(`\n${'='.repeat(60)}\n`);
+});

@@ -1,0 +1,84 @@
+Table wymiar_czasu {
+  id_czasu bigint [pk]
+  czas timestamp [not null]
+  godzina int [not null]
+  minuta int [not null]
+  sekunda int [not null]
+  dzien_tygodnia varchar(20) [not null]
+  dzien_miesiaca int [not null]
+  miesiac int [not null]
+  rok int [not null]
+  pora_dnia varchar(30) [not null]
+  czy_dzien_roboczy boolean [not null]
+  czy_weekend boolean [not null]
+}
+
+Table wymiar_lokalizacji {
+  id_lokalizacji bigint [pk]
+  dokladna_lokalizacja_dlugosc double [not null]
+  dokladna_lokalizacja_szerokosc double [not null]
+  id_strefy varchar(100)
+  nazwa_strefy varchar(200)
+  miasto_strefy varchar(100) [not null]
+  id_stacji varchar(100)
+  nazwa_stacji varchar(200)
+}
+
+Table fakt_przejazdu {
+  id_przejazdu bigint [pk]
+  id_czasu_rozpoczecia bigint [not null, ref: > wymiar_czasu.id_czasu]
+  id_czasu_zakonczenia bigint [not null, ref: > wymiar_czasu.id_czasu]
+  id_lokalizacji_start bigint [not null, ref: > wymiar_lokalizacji.id_lokalizacji]
+  id_lokalizacji_koniec bigint [not null, ref: > wymiar_lokalizacji.id_lokalizacji]
+  czas_rozpoczecia timestamp [not null]
+  czas_zakonczenia timestamp [not null]
+  czas_trwania_sekundy int [not null]
+  przebyte_metry int [not null]
+  koszt double [not null]
+  typ_rozliczenia varchar(20) [not null]
+}
+
+Table predykcje_popytu {
+  id_predykcji bigint [pk]
+  id_lokalizacji bigint [not null, ref: > wymiar_lokalizacji.id_lokalizacji]
+  id_czasu bigint [not null, ref: > wymiar_czasu.id_czasu]
+  czas_predykcji timestamp [not null]
+  przewidywana_liczba_rowerow int [not null]
+  poziom_pewnosci double
+  dolny_przedzial_ufnosci int
+  gorny_przedzial_ufnosci int
+  nazwa_modelu varchar(100)
+}
+
+Table raporty_analityczne {
+  id_raportu bigint [pk]
+  nazwa_raportu varchar(200) [not null]
+  typ_raportu varchar(30) [not null]
+  zakres_od timestamp [not null]
+  zakres_do timestamp [not null]
+  czas_wygenerowania timestamp [not null]
+  tresc_binarna bytea [not null]
+  format varchar(10) [not null]
+  sciezka_pliku varchar(500)
+  rozmiar_bajty bigint
+}
+
+Table raporty_fakty {
+  id_raportu bigint [not null, ref: > raporty_analityczne.id_raportu]
+  id_przejazdu bigint [not null, ref: > fakt_przejazdu.id_przejazdu]
+
+  indexes {
+    (id_raportu, id_przejazdu) [pk]
+  }
+}
+
+Table rekomendacje_lokalizacji {
+  id_rekomendacji bigint [pk]
+  data_utworzenia timestamp [not null]
+  proponowana_lokalizacja_dlugosc double [not null]
+  proponowana_lokalizacja_szerokosc double [not null]
+  wynik_oceny double [not null]
+  uzasadnienie text
+  typ_rekomendacji varchar(50)
+  status varchar(30)
+}

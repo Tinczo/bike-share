@@ -1,0 +1,105 @@
+@startuml domain_3
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam dpi 200
+hide empty members
+
+left to right direction
+
+enum TypPlatnosci {
+    PAY_PER_RIDE
+    ABONAMENT
+    ZASILENIE_KONTA
+}
+
+enum StatusPlatnosci {
+    OCZEKUJACA
+    ZAKONCZONA
+    ANULOWANA
+    ODRZUCONA
+}
+
+enum TypKary {
+    PRZEKROCZENIE_CZASU
+    USZKODZENIE
+    INNE
+}
+
+enum StatusKary {
+    NALICZONA
+    ZAPLACONA
+    ANULOWANA
+}
+
+enum TypAbonamentu {
+    DOBOWY
+    TYGODNIOWY
+    MIESIECZNY
+}
+
+class Uzytkownik {
+    id_uzytkownika: String [1]
+}
+
+class Platnosc {
+    id_platnosci: String [1]
+    typ_platnosci: TypPlatnosci [1]
+    kwota: Real [1]
+    czas_zlecenia: String [1]
+    czas_zakonczenia: String [0..1]
+    status: StatusPlatnosci [1]
+    id_wypozyczenia: String [0..1]
+}
+
+class Abonament {
+    id_abonamentu: String [1]
+    typ_abonamentu: TypAbonamentu [1]
+    czas_rozpoczecia: String [1]
+    czas_zakonczenia: String [1]
+    automatyczne_odnowienie: Boolean [1]
+}
+
+class Faktura {
+    id_faktury: String [1]
+    kwota: Real [1]
+    czas_wystawienia: String [1]
+    czas_zaplaty: String [0..1]
+}
+
+class Paragon {
+    id_paragonu: String [1]
+    kwota: Real [1]
+    czas_wystawienia: String [1]
+}
+
+class Kara {
+    id_kary: String [1]
+    typ_kary: TypKary [1]
+    kwota: Real [1]
+    czas_naliczenia: String [1]
+    status: StatusKary [1]
+    opis: String [0..1]
+}
+
+class Zwrot {
+    id_zwrotu: String [1]
+    kwota: Real [1]
+    czas_zwrotu: String [1]
+    powod: String [0..1]
+}
+
+Uzytkownik "1" -- "0..*" Platnosc : realizuje >
+Uzytkownik "1" -- "0..*" Abonament : posiada >
+Uzytkownik "1" -- "0..*" Faktura : otrzymuje >
+Uzytkownik "1" -down- "0..*" Paragon : otrzymuje >
+Uzytkownik "1" -down- "0..*" Kara : otrzymuje >
+Uzytkownik "1" -- "0..*" Zwrot : otrzymuje >
+
+Abonament "1" -- "0..1" Platnosc : oplacony przez >
+Platnosc "1" -- "1" Faktura : generuje >
+Platnosc "0..1" -- "0..1" Paragon : generuje >
+Kara "1" -- "0..1" Faktura : rozliczana przez >
+Zwrot "1" -- "1" Platnosc : kompensuje >
+
+@enduml

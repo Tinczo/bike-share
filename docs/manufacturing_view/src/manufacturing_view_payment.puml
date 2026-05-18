@@ -1,0 +1,62 @@
+@startuml
+package "Payment Service (Java/Spring Boot)" {
+
+    package "api (Web Layer)" {
+        class "PaymentController" {
+            + topUpWallet()
+            + getBalance()
+        }
+        class "PaymentDTO"
+    }
+
+    package "domain (Business Logic)" {
+        class "WalletService" {
+            + chargeUser()
+            + processRefund()
+        }
+        class "TransactionManager" {
+            + executeSecureTransaction()
+        }
+        interface "PaymentGatewayPort" {
+            + authorize()
+            + capture()
+        }
+    }
+
+    package "infrastructure" {
+        package "persistence (Database)" {
+            class "PaymentRepository"
+            class "WalletEntity"
+        }
+        
+        package "gateway_adapters (External)" {
+            class "StripeAdapter"
+            class "BlikAdapter"
+        }
+
+        package "messaging (Kafka)" {
+            class "RentalFeeConsumer" {
+                + onRentalFinished()
+            }
+            class "PaymentStatusProducer"
+        }
+    }
+}
+
+"PaymentController" --> "WalletService"
+"WalletService" --> "PaymentGatewayPort"
+"WalletService" --> "TransactionManager"
+"StripeAdapter" ..|> "PaymentGatewayPort" : implements
+"BlikAdapter" ..|> "PaymentGatewayPort" : implements
+"RentalFeeConsumer" --> "WalletService" : triggers charge
+
+note bottom of "gateway_adapters (External)"
+  Implementacja komunikacji 
+  z zewnętrznymi API (REST/SOAP)
+end note
+
+note right of "TransactionManager"
+  Zapewnienie spójności ACID
+  dla operacji finansowych
+end note
+@enduml

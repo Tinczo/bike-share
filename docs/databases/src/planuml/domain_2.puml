@@ -1,0 +1,139 @@
+@startuml
+skinparam linetype ortho
+skinparam dpi 200
+
+entity "rowery" as rowery {
+  **PK: id_roweru** : bigint NOT NULL
+  --
+  **FK: id_stacji** : bigint
+  numer_seryjny : varchar(100) NOT NULL
+  model : varchar(100) NOT NULL
+  status_operacyjny : varchar(20) NOT NULL
+  ostatnia_lokalizacja_szer_geo : double precision
+  ostatnia_lokalizacja_dl_geo : double precision
+  ostatni_poziom_baterii : int
+  data_zakupu : timestamp NOT NULL
+  data_ostatniego_serwisu : timestamp
+}
+
+entity "odczyty_telemetryczne" as odczyty {
+  **PK: id_odczytu** : bigint NOT NULL
+  --
+  **FK: id_roweru** : bigint NOT NULL
+  czas_odczytu : timestamp NOT NULL
+  szer_geo : double precision NOT NULL
+  dl_geo : double precision NOT NULL
+  poziom_baterii : int NOT NULL
+  cisnienie_przednia_opona : double precision
+  cisnienie_tylna_opona : double precision
+  predkosc : double precision
+  status_blokady : varchar(20) NOT NULL
+}
+
+entity "stacje" as stacje {
+  **PK: id_stacji** : bigint NOT NULL
+  --
+  nazwa : varchar(200) NOT NULL
+  szer_geo : double precision NOT NULL
+  dl_geo : double precision NOT NULL
+  pojemnosc : int NOT NULL
+  status_operacyjny : varchar(20) NOT NULL
+  data_instalacji : timestamp NOT NULL
+}
+
+entity "statusy_stacji" as statusy {
+  **PK: id_statusu** : bigint NOT NULL
+  --
+  **FK: id_stacji** : bigint NOT NULL
+  czas_statusu : timestamp NOT NULL
+  dostepne_rowery : int NOT NULL
+  dostepne_stojaki : int NOT NULL
+  czy_sprawna : boolean NOT NULL
+}
+
+entity "zgloszenia_usterek" as zgloszenia {
+  **PK: id_zgloszenia** : bigint NOT NULL
+  --
+  **FK: id_roweru** : bigint NOT NULL
+  **FK: id_uzytkownika** : bigint
+  data_zgloszenia : timestamp NOT NULL
+  typ_usterki : varchar(30) NOT NULL
+  opis : text
+  status_rozwiazania : varchar(30)
+  czy_zweryfikowane : boolean
+  data_weryfikacji : timestamp
+  data_rozwiazania : timestamp
+}
+
+entity "alerty_serwisowe" as alerty {
+  **PK: id_alertu** : bigint NOT NULL
+  --
+  **FK: id_roweru** : bigint
+  **FK: id_stacji** : bigint
+  typ_alertu : varchar(30) NOT NULL
+  data_alertu : timestamp NOT NULL
+  powaga : varchar(20) NOT NULL
+  wiadomosc : text
+  status_rozwiazania : varchar(30)
+  data_rozwiazania : timestamp
+}
+
+entity "strefy_geofencing" as strefy {
+  **PK: id_strefy** : bigint NOT NULL
+  --
+  nazwa : varchar(200) NOT NULL
+  miasto : varchar(100) NOT NULL
+  geometria : geometry NOT NULL
+  typ_strefy : varchar(30) NOT NULL
+  czy_aktywna : boolean NOT NULL
+}
+
+entity "naruszenia_strefy" as naruszenia {
+  **PK: id_naruszenia** : bigint NOT NULL
+  --
+  **FK: id_roweru** : bigint NOT NULL
+  **FK: id_strefy** : bigint NOT NULL
+  data_naruszenia : timestamp NOT NULL
+  szer_geo : double precision NOT NULL
+  dl_geo : double precision NOT NULL
+  status_obslugi : varchar(20) NOT NULL
+}
+
+entity "relokacje_rowerow" as relokacje {
+  **PK: id_relokacji** : bigint NOT NULL
+  --
+  **FK: id_roweru** : bigint NOT NULL
+  **FK: id_stacji_zrodlowej** : bigint
+  **FK: id_stacji_docelowej** : bigint NOT NULL
+  data_relokacji : timestamp NOT NULL
+  powod : text
+  status_relokacji : varchar(20) NOT NULL
+}
+
+entity "serwisy_rowerow" as serwisy {
+  **PK: id_serwisu** : bigint NOT NULL
+  --
+  **FK: id_roweru** : bigint NOT NULL
+  data_serwisu : timestamp NOT NULL
+  typ_serwisu : varchar(30) NOT NULL
+  opis : text
+  koszt : double precision
+}
+
+' Relacje
+rowery ||--o{ odczyty : "id_roweru"
+rowery ||--o{ zgloszenia : "id_roweru"
+rowery ||--o{ alerty : "id_roweru"
+rowery ||--o{ naruszenia : "id_roweru"
+rowery ||--o{ relokacje : "id_roweru"
+rowery ||--o{ serwisy : "id_roweru"
+rowery }o--o| stacje : "id_stacji"
+
+stacje ||--o{ statusy : "id_stacji"
+stacje ||--o{ alerty : "id_stacji"
+stacje ||--o{ relokacje : "id_stacji_zrodlowej"
+stacje ||--o{ relokacje : "id_stacji_docelowej"
+
+strefy ||--o{ naruszenia : "id_strefy"
+
+@enduml

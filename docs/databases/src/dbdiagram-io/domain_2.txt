@@ -1,0 +1,107 @@
+Table rowery {
+  id_roweru bigint [pk]
+  id_stacji bigint [ref: > stacje.id_stacji]
+  numer_seryjny varchar(100) [not null]
+  model varchar(100) [not null]
+  status_operacyjny varchar(20) [not null]
+  ostatnia_lokalizacja_szer_geo double
+  ostatnia_lokalizacja_dl_geo double
+  ostatni_poziom_baterii int
+  data_zakupu timestamp [not null]
+  data_ostatniego_serwisu timestamp
+}
+
+Table odczyty_telemetryczne {
+  id_odczytu bigint [pk]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  czas_odczytu timestamp [not null]
+  szer_geo double [not null]
+  dl_geo double [not null]
+  poziom_baterii int [not null]
+  cisnienie_przednia_opona double
+  cisnienie_tylna_opona double
+  predkosc double
+  status_blokady varchar(20) [not null]
+}
+
+Table stacje {
+  id_stacji bigint [pk]
+  nazwa varchar(200) [not null]
+  szer_geo double [not null]
+  dl_geo double [not null]
+  pojemnosc int [not null]
+  status_operacyjny varchar(20) [not null]
+  data_instalacji timestamp [not null]
+}
+
+Table statusy_stacji {
+  id_statusu bigint [pk]
+  id_stacji bigint [not null, ref: > stacje.id_stacji]
+  czas_statusu timestamp [not null]
+  dostepne_rowery int [not null]
+  dostepne_stojaki int [not null]
+  czy_sprawna boolean [not null]
+}
+
+Table zgloszenia_usterek {
+  id_zgloszenia bigint [pk]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  id_uzytkownika bigint
+  data_zgloszenia timestamp [not null]
+  typ_usterki varchar(30) [not null]
+  opis text
+  status_rozwiazania varchar(30)
+  czy_zweryfikowane boolean
+  data_weryfikacji timestamp
+  data_rozwiazania timestamp
+}
+
+Table alerty_serwisowe {
+  id_alertu bigint [pk]
+  id_roweru bigint [ref: > rowery.id_roweru]
+  id_stacji bigint [ref: > stacje.id_stacji]
+  typ_alertu varchar(30) [not null]
+  data_alertu timestamp [not null]
+  powaga varchar(20) [not null]
+  wiadomosc text
+  status_rozwiazania varchar(30)
+  data_rozwiazania timestamp
+}
+
+Table strefy_geofencing {
+  id_strefy bigint [pk]
+  nazwa varchar(200) [not null]
+  miasto varchar(100) [not null]
+  geometria geometry [not null]
+  typ_strefy varchar(30) [not null]
+  czy_aktywna boolean [not null]
+}
+
+Table naruszenia_strefy {
+  id_naruszenia bigint [pk]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  id_strefy bigint [not null, ref: > strefy_geofencing.id_strefy]
+  data_naruszenia timestamp [not null]
+  szer_geo double [not null]
+  dl_geo double [not null]
+  status_obslugi varchar(20) [not null]
+}
+
+Table relokacje_rowerow {
+  id_relokacji bigint [pk]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  id_stacji_zrodlowej bigint [ref: > stacje.id_stacji]
+  id_stacji_docelowej bigint [not null, ref: > stacje.id_stacji]
+  data_relokacji timestamp [not null]
+  powod text
+  status_relokacji varchar(20) [not null]
+}
+
+Table serwisy_rowerow {
+  id_serwisu bigint [pk]
+  id_roweru bigint [not null, ref: > rowery.id_roweru]
+  data_serwisu timestamp [not null]
+  typ_serwisu varchar(30) [not null]
+  opis text
+  koszt double
+}

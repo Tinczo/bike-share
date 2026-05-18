@@ -1,0 +1,180 @@
+@startuml domain_2
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam dpi 200
+hide empty members
+
+top to bottom direction
+
+enum StatusOperacyjnyRoweru {
+    SPRAWNY
+    NIESPRAWNY
+    W_SERWISIE
+    POTENCJALNIE_USZKODZONY
+}
+
+enum StatusOperacyjnyStacji {
+    SPRAWNA
+    AWARIA
+    WYLACZONA
+}
+
+enum TypAlertu {
+    NISKI_POZIOM_BATERII
+    NARUSZENIE_STREFY
+    USTERKA_MECHANICZNA
+    USTERKA_ELEKTRYCZNA
+    AWARIA_STACJI
+}
+
+enum PowagaAlertu {
+    NISKA
+    SREDNIA
+    WYSOKA
+    KRYTYCZNA
+}
+
+enum TypUsterki {
+    BRAK_POWIETRZA_TYL
+    BRAK_POWIETRZA_PRZOD
+    USZKODZONY_ZAMEK
+    USZKODZONY_LANCUCH
+    USZKODZONE_SIODELKO
+    USZKODZONA_KIEROWNICA
+}
+
+enum StatusRelokacji {
+    W_TRAKCIE
+    ZAKONCZONA
+    ANULOWANA
+}
+
+enum StatusObslugiNaruszenia {
+    OCZEKUJACE 
+    W_TRAKCIE
+    ROZWIAZANE
+}
+
+enum TypSerwisu {
+    PRZEGLAD
+    NAPRAWA
+    WYMIANA_CZESCI
+}
+
+enum StatusBlokady {
+    ZABLOKOWANY
+    ODBLOKOWANY
+}
+
+class Lokalizacja <<dataType>>{
+    dlugosc: Real
+    szerokosc: Real
+}
+
+class Rower {
+    id_roweru: String [1]
+    numer_seryjny: String [1]
+    model: String [1]
+    status_operacyjny: StatusOperacyjnyRoweru [1]
+    ostatnia_lokalizacja: Lokalizacja [0..1]
+    ostatni_poziom_baterii: Integer [0..1]
+    data_zakupu: String [1]
+    data_ostatniego_serwisu: String [0..1]
+}
+
+class OdczytTelemetryczny {
+    id_roweru: String [1]
+    czas_odczytu: String [1]
+    lokalizacja: Lokalizacja [1]
+    poziom_baterii: Integer [1]
+    cisnienie_przednia_opona: Real [0..1]
+    cisnienie_tylna_opona: Real [0..1]
+    predkosc: Real [0..1]
+    status_blokady: StatusBlokady [1]
+}
+
+class Stacja {
+    id_stacji: String [1]
+    nazwa: String [1]
+    lokalizacja: Lokalizacja [1]
+    pojemnosc: Integer [1]
+    status_operacyjny: StatusOperacyjnyStacji [1]
+    data_instalacji: String [1]
+}
+
+class StatusStacji {
+    czas_statusu: String [1]
+    dostepne_rowery: Integer [1]
+    dostepne_stojaki: Integer [1]
+    czy_sprawna: Boolean [1]
+}
+
+class ZgloszenieUsterki {
+    id_zgloszenia: String [1]
+    data_zgloszenia: String [1]
+    typ_usterki: TypUsterki [1]
+    opis: String [0..1]
+    status_rozwiazania: String [0..1]
+    czy_zweryfikowane: Boolean [0..1]
+    data_weryfikacji: String [0..1]
+    data_rozwiazania: String [0..1]
+}
+
+class AlertSerwisowy {
+    id_alertu: String [1]
+    typ_alertu: TypAlertu [1]
+    data_alertu: String [1]
+    powaga: PowagaAlertu [1]
+    wiadomosc: String [0..1]
+    status_rozwiazania: String [0..1]
+    data_rozwiazania: String [0..1]
+}
+
+class StrefaGeofencing {
+    id_strefy: String [1]
+    nazwa: String [1]
+    miasto: String [1]
+    geometria: String [1]
+    typ_strefy: String [1]
+    czy_aktywna: Boolean [1]
+}
+
+class NaruszenieStrefy {
+    id_naruszenia: String [1]
+    data_naruszenia: String [1]
+    lokalizacja: Lokalizacja [1]
+    status_obslugi: StatusObslugiNaruszenia [1]
+}
+
+class RelokacjaRoweru {
+    id_relokacji: String [1]
+    data_relokacji: String [1]
+    powod: String [0..1]
+    status_relokacji: StatusRelokacji [1]
+}
+
+class SerwisRoweru {
+    id_serwisu: String [1]
+    data_serwisu: String [1]
+    typ_serwisu: TypSerwisu [1]
+    opis: String [0..1]
+    koszt: Real [0..1]
+}
+
+Rower *-left- "0..*" OdczytTelemetryczny : generuje >
+Rower *-- "0..*" ZgloszenieUsterki : posiada >
+Rower "0..*" -- "0..1" Stacja : zaparkowany na >
+Rower "1" -- "0..*" AlertSerwisowy : generuje >
+Rower "1" -right- "0..*" NaruszenieStrefy : narusza >
+Rower "1" -- "0..*" RelokacjaRoweru : relokowany przez >
+Rower "1" -up- "0..*" SerwisRoweru : serwisowany w >
+
+Stacja *-- "0..*" StatusStacji : posiada >
+Stacja "1" -- "0..*" AlertSerwisowy : dotyczy <
+Stacja "1" o-- "0..*" RelokacjaRoweru : (zrodlo) >
+Stacja "1" o-- "0..*" RelokacjaRoweru : (cel) >
+
+StrefaGeofencing "1" -- "0..*" NaruszenieStrefy : naruszona przez >
+
+@enduml

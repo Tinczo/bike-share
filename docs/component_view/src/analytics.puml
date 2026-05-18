@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 180
+skinparam ranksep 120
+
+
+title Diagram Komponentów - Domena Analityki
+
+' --- KONTEKST ---
+    Container(api_gateway, "API Gateway", "Spring Cloud", "Dostęp do raportów")
+    ContainerQueue(message_bus, "Szyna Zdarzeń", "Kafka", "Źródło danych (Event Sourcing)")
+
+' --- WNĘTRZE DOMENY ---
+Container_Boundary(domain, "Domena Analityki") {
+    Component(analytics_service, "Serwis Analityczny", "Python/FastAPI", "Generowanie raportów, procesy ETL, Heatmapy")
+    ComponentDb(warehouse, "Hurtownia Danych", "PostgreSQL / ClickHouse", "Dane historyczne, zaggregowane statystyki")
+}
+
+' --- RELACJE ---
+Rel(api_gateway, analytics_service, "Pobierz raport PDF/CSV", "REST")
+
+Rel(message_bus, analytics_service, "Sub: Wszystkie zdarzenia domenowe", "TCP")
+Rel(analytics_service, warehouse, "ETL / Agregacja", "JDBC/Native")
+
+@enduml

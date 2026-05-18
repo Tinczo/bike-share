@@ -1,0 +1,69 @@
+Table uzytkownicy {
+  id_uzytkownika bigint [pk]
+}
+
+Table abonamenty {
+  id_abonamentu bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  typ_abonamentu varchar(30) [not null]
+  czas_rozpoczecia timestamp [not null]
+  czas_zakonczenia timestamp [not null]
+  automatyczne_odnowienie boolean [not null]
+  cena double [not null]
+}
+
+Table platnosci {
+  id_platnosci bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_abonamentu bigint [ref: > abonamenty.id_abonamentu]
+  typ_platnosci varchar(30) [not null]
+  kwota double [not null]
+  czas_zlecenia timestamp [not null]
+  czas_zakonczenia timestamp
+  status varchar(20) [not null]
+  id_wypozyczenia varchar(255)
+}
+
+Table faktury {
+  id_faktury bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_platnosci bigint [not null, ref: > platnosci.id_platnosci]
+  numer_faktury varchar(50) [not null]
+  kwota_netto double [not null]
+  kwota_brutto double [not null]
+  stawka_vat double [not null]
+  czas_wystawienia timestamp [not null]
+  czas_sprzedazy timestamp [not null]
+  czas_zaplaty timestamp
+  status varchar(20) [not null]
+}
+
+Table paragony {
+  id_paragonu bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_platnosci bigint [ref: > platnosci.id_platnosci]
+  numer_paragonu varchar(50) [not null]
+  kwota double [not null]
+  czas_wystawienia timestamp [not null]
+}
+
+Table kary {
+  id_kary bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_wypozyczenia bigint [not null]
+  id_faktury bigint [ref: > faktury.id_faktury]
+  typ_kary varchar(30) [not null]
+  kwota double [not null]
+  czas_naliczenia timestamp [not null]
+  status varchar(20) [not null]
+  opis text
+}
+
+Table zwroty {
+  id_zwrotu bigint [pk]
+  id_uzytkownika bigint [not null, ref: > uzytkownicy.id_uzytkownika]
+  id_platnosci bigint [not null, ref: > platnosci.id_platnosci]
+  kwota double [not null]
+  czas_zwrotu timestamp [not null]
+  powod text
+}

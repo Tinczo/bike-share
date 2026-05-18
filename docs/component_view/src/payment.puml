@@ -1,0 +1,31 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+skinparam nodesep 180
+skinparam ranksep 120
+
+
+title Diagram Komponentów - Domena Płatności
+
+Container(api_gateway, "API Gateway", "Spring Cloud", "Punkt wejścia HTTP")
+ContainerQueue(message_bus, "Szyna Zdarzeń", "Kafka", "Odbiór zleceń płatniczych")
+
+System_Ext(payment_gw, "Bramka Płatności", "Stripe / BLIK")
+
+' --- WNĘTRZE DOMENY ---
+Container_Boundary(domain, "Domena Płatności") {
+    Component(payment_service, "Serwis Płatności", "Java/Spring Boot", "Zarządzanie portfelem, integracja z bramkami")
+    ComponentDb(payment_db, "Baza Płatności", "PostgreSQL", "Konta użytkowników, historia transakcji")
+}
+
+' --- RELACJE ---
+Rel(api_gateway, payment_service, "Doładuj konto / Sprawdź saldo", "REST")
+
+Rel(payment_service, payment_db, "R/W (Transakcje ACID)", "JDBC")
+Rel(payment_service, payment_gw, "Procesowanie płatności", "HTTPS API")
+
+Rel_R(message_bus, payment_service, "Sub: Nalicz opłatę za przejazd", "TCP")
+Rel_R(payment_service, message_bus, "Pub: Płatność udana/nieudana", "TCP")
+
+@enduml

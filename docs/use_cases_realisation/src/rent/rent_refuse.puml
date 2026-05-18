@@ -1,0 +1,50 @@
+@startuml
+title Wypożyczenie: Odmowa wypożyczenia (Brak środków)
+
+skinparam sequence {
+    ArrowColor #2E86C1
+    LifeLineBorderColor #2E86C1
+    LifeLineBackgroundColor #A9CCE3
+    ParticipantBorderColor #2E86C1
+    ParticipantBackgroundColor White
+}
+
+
+actor "Użytkownik Mobilny" as User
+participant "Aplikacja Mobilna" as App
+participant "API Gateway" as Gateway
+participant "Serwis Wypożyczeń" as Rental
+participant "Serwis Płatności" as Payment
+
+User -> App: Zeskanuj kod QR
+activate App
+App -> Gateway: POST /rentals/start
+activate Gateway
+Gateway -> Rental: Przekaż żądanie
+activate Rental
+
+group Walidacja Finansowa (Niepowodzenie)
+    Rental -> Payment: Zablokuj środki (Pre-auth request)
+    activate Payment
+    
+    Payment -> Payment: Sprawdź saldo portfela (< 20 PLN)
+    Payment -> Payment: Sprawdź ważność karty (Błąd/Odmowa)
+    
+    Payment --> Rental: 402 Payment Required (Odmowa blokady)
+    deactivate Payment
+    
+    note right of Rental
+      Nie dochodzi do komunikacji
+      z Serwisem Floty (Rower pozostaje zamknięty)
+    end note
+    
+    Rental --> Gateway: 402 Błąd: Niewystarczające środki
+    deactivate Rental
+end
+
+Gateway --> App: Wyświetl błąd płatności
+deactivate Gateway
+App --> User: Komunikat: "Doładuj konto lub zmień kartę"
+deactivate App
+
+@enduml

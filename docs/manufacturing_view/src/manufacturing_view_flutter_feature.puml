@@ -1,0 +1,89 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam componentStyle uml2
+
+package "features/rental" {
+    
+    ' 1. DOMAIN LAYER
+    package "domain" {
+        package "entities" {
+            class "Rental" {
+                + String id
+                + DateTime startTime
+                + double cost
+            }
+        }
+        
+        package "contracts (repositories)" {
+            interface "RentalRepositoryContract" {
+                + rentBike(id)
+                + returnBike(id)
+            }
+        }
+        
+        package "usecases" {
+            class "RentBikeUseCase"
+            class "ReturnBikeUseCase"
+        }
+    }
+
+    ' 2. DATA LAYER
+    package "data" {
+        package "models" {
+            class "RentalModel" {
+                + toJson()
+                + fromJson()
+            }
+        }
+        
+        package "datasources" {
+            class "RentalRemoteDataSource" {
+                + httpPost()
+            }
+            class "RentalLocalDataSource" {
+                + cacheRental()
+            }
+        }
+        
+        package "repositories" {
+            class "RentalRepositoryImpl"
+        }
+    }
+
+    ' 3. PRESENTATION LAYER
+    package "presentation" {
+        package "bloc" {
+            class "RentalBloc"
+            class "RentalEvent"
+            class "RentalState"
+        }
+        
+        package "pages" {
+            class "RentalScreen"
+        }
+        
+        package "widgets" {
+            class "TimerWidget"
+        }
+    }
+}
+
+' RELACJE I ZALEŻNOŚCI
+
+' Domain
+"RentBikeUseCase" ..> "RentalRepositoryContract" : uses
+"RentBikeUseCase" ..> "Rental" : returns
+
+' Data
+"RentalModel" --|> "Rental" : extends
+"RentalRepositoryImpl" ..|> "RentalRepositoryContract" : implements
+"RentalRepositoryImpl" --> "RentalRemoteDataSource" : uses
+"RentalRepositoryImpl" --> "RentalLocalDataSource" : uses
+
+' Presentation
+"RentalBloc" --> "RentBikeUseCase" : calls
+"RentalBloc" ..> "RentalState" : emits
+"RentalScreen" --> "RentalBloc" : sends events
+
+
+@enduml

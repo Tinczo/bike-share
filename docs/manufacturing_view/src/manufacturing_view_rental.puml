@@ -1,0 +1,96 @@
+@startuml
+package "Rental Service (Java/Spring Boot)" {
+
+    package "web (API Layer)" {
+        class "RentalController" {
+            + startRental(bikeId, userId)
+            + stopRental(rentalId)
+            + reserveBike(bikeId)
+        }
+        class "RentalDTO"
+        class "ReservationDTO"
+    }
+
+    package "domain (Business Logic)" {
+        class "RentalService" {
+            + initiateRentalProcess()
+            + finalizeRental()
+        }
+        
+        class "ReservationService" {
+            + createReservation()
+            + expireReservation()
+        }
+
+        package "pricing" {
+            interface "PriceProvider" {
+                + getPriceList(cityZone)
+            }
+            class "CostCalculator" {
+                + calculateFinalFee(duration, tariff)
+            }
+        }
+
+        package "process_saga" {
+            class "RentalSagaManager" {
+                + handlePaymentConfirmation()
+                + compensateRentalFailure()
+            }
+        }
+    }
+
+    package "infrastructure" {
+        package "persistence (PostgreSQL)" {
+            class "RentalRepository"
+            class "ReservationRepository"
+            class "RentalEntity" {
+                - status: ACTIVE/FINISHED
+                - startTime: Timestamp
+            }
+        }
+
+        package "cache (Redis)" {
+            class "RedisPriceProvider" {
+                + getCachedTariff()
+            }
+        }
+
+        package "messaging (Kafka)" {
+            class "RentalEventProducer" {
+                + publishRentalStarted()
+                + publishRentalEnded()
+            }
+            class "PaymentEventListener" {
+                + onPaymentAuthorized()
+                + onPaymentDeclined()
+            }
+        }
+        
+        package "config" {
+            class "KafkaConfig"
+            class "RedisConfig"
+        }
+    }
+}
+
+' Relacje
+"RentalController" --> "RentalService"
+"RentalController" --> "ReservationService"
+
+"RentalService" --> "RentalSagaManager" : Delegates workflow
+"RentalService" --> "CostCalculator" : Uses
+"CostCalculator" --> "PriceProvider" : Fetches rates
+
+"RentalSagaManager" --> "RentalRepository" : Updates state
+"RentalSagaManager" --> "RentalEventProducer" : Notifies system
+
+"RedisPriceProvider" ..|> "PriceProvider" : implements
+"PaymentEventListener" --> "RentalSagaManager" : Triggers action
+
+"RentalRepository" --> "RentalEntity"
+
+"pricing" -[hidden]down-> "process_saga" 
+
+
+
+@enduml

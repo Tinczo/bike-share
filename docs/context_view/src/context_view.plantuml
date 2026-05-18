@@ -1,0 +1,38 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+' Ustawienia estetyczne
+skinparam linetype ortho
+skinparam nodesep 200
+skinparam ranksep 180
+
+title Diagram Kontekstowy - System Zarządzania Infrastrukturą Rowerową
+
+' --- AKTORZY ---
+Person(user, "Użytkownik Mobilny", "Mieszkaniec miasta korzystający z rowerów")
+Person(operator, "Operator Systemu", "Pracownik techniczny lub administrator zarządzający flotą")
+
+' --- SYSTEM GŁÓWNY (BLACK BOX) ---
+System(system, "System Zarządzania Infrastrukturą Rowerową", "Zarządza wypożyczeniami, flotą, płatnościami i analityką")
+
+' --- SYSTEMY ZEWNĘTRZNE ---
+System_Ext(iot_device, "Rower / Stacja (IoT)", "Fizyczne urządzenia: sterownik roweru, GPS, zamek elektroniczny")
+System_Ext(payment_gw, "System Płatności", "Zewnętrzny dostawca (np. Stripe, Przelewy24, BLIK)")
+
+' --- RELACJE ---
+
+' Użytkownik korzysta z systemu
+Rel(user, system, "Wypożycza rowery, sprawdza mapę, dokonuje płatności", "Aplikacja Mobilna")
+
+' Operator zarządza systemem
+Rel(operator, system, "Monitoruje stan floty, zarządza zgłoszeniami, generuje raporty", "Panel WWW")
+
+' Interakcja z IoT (dwukierunkowa)
+Rel(system, iot_device, "Wysyła komendy (odblokuj/zablokuj)", "MQTT/TLS")
+Rel(iot_device, system, "Wysyła telemetrię (GPS, stan baterii)", "MQTT/TLS")
+
+' Interakcja z Płatnościami
+Rel(system, payment_gw, "Inicjuje i procesuje transakcje finansowe", "HTTPS/API")
+Rel(payment_gw, system, "Potwierdza status płatności (Webhook)", "HTTPS")
+
+@enduml

@@ -1,0 +1,67 @@
+@startuml
+title Zakończenie wypożyczenia: scenariusz główny
+
+skinparam sequence {
+    ArrowColor #2E86C1
+    LifeLineBorderColor #2E86C1
+    LifeLineBackgroundColor #A9CCE3
+    ParticipantBorderColor #2E86C1
+    ParticipantBackgroundColor White
+}
+
+actor "Użytkownik" as User
+entity "Rower (IoT)" as Bike
+participant "MQTT Broker" as MQTT
+participant "Serwis Floty\n(Fleet Service)" as Fleet
+participant "Szyna Zdarzeń\n(Kafka)" as Kafka
+participant "Serwis Wypożyczeń\n(Rental Service)" as Rental
+participant "Serwis Płatności\n(Payment Service)" as Payment
+participant "Bramka Płatności\n(Zewn.)" as ExtPayment
+database "Baza Analityczna" as Analytics
+
+User -> Bike: Ręczne zamknięcie blokady
+activate Bike
+Bike -> MQTT: Publish telemetry {locked: true, gps: ...}
+deactivate Bike
+activate MQTT
+
+MQTT -> Fleet: Przekaż strumień (TCP)
+activate Fleet
+deactivate MQTT
+
+group Przetwarzanie IoT
+    Fleet -> Fleet: Aktualizuj Device Twin
+    Fleet -> Kafka: Publish Event: BikeLocked {bikeId, timestamp, geo}
+    activate Kafka
+end
+deactivate Fleet
+
+group Logika Biznesowa (Reakcja na Zdarzenie)
+    Kafka -> Rental: Consume: BikeLocked
+    activate Rental
+    
+    Rental -> Rental: Znajdź aktywne wypożyczenie
+    Rental -> Rental: Oblicz czas i koszt
+    Rental -> Rental: Zamknij wypożyczenie (Status: FINISHED)
+    
+    Rental -> Kafka: Publish Event: RentalEnded {userId, amount}
+    deactivate Rental
+end
+
+group Rozliczenie (Async)
+    Kafka -> Payment: Consume: RentalEnded
+    activate Payment
+    Payment -> ExtPayment: Obciążenie karty (Capture)
+    activate ExtPayment
+    ExtPayment --> Payment: Sukces
+    deactivate ExtPayment
+    Payment -> Kafka: Publish Event: PaymentSuccessful
+    deactivate Payment
+end
+
+group Analityka (Async)
+    Kafka -> Analytics: Consume: RentalEnded (ETL Process)
+end
+deactivate Kafka
+
+@enduml

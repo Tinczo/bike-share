@@ -1,0 +1,74 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam componentStyle uml2
+skinparam linetype ortho
+
+' KLUCZOWA POPRAWKA: Wyłączenie kropki jako separatora
+set separator none
+
+package "lib" {
+    
+    ' --- WARSTWA CORE ---
+    package "core" {
+        package "error" {
+            class "Failures"
+            class "Exceptions"
+        }
+        
+        package "network" {
+            class "NetworkInfo"
+        }
+        
+        package "usecases" {
+            interface "UseCase<Type, Params>"
+        }
+        
+        package "util" {
+            class "InputConverter"
+        }
+    }
+
+    ' --- FEATURES ---
+    package "features" {
+        
+        package "rental (Wypożyczenia)" as RentalFeature {
+             note right: Szczegóły na osobnym diagramie
+        }
+        
+        package "wallet (Portfel/Płatności)" as WalletFeature {
+        }
+        
+        package "map (Mapa Rowerów)" as MapFeature {
+        }
+        
+        package "faults (Zgłaszanie usterek)" as FaultsFeature {
+        }
+        package "account (Profil Użytkownika)" as AccountFeature {
+
+        }
+        
+        package "auth (Logowanie)" as AuthFeature {
+        }
+    }
+    
+    ' Plik main zdefiniowany jednoznacznie
+    class "main.dart" as MainFile
+}
+
+' Zależności ogólne
+RentalFeature ..> "core" : uses
+WalletFeature ..> "core" : uses
+MapFeature ..> "core" : uses
+AuthFeature ..> "core" : uses
+AccountFeature ..> "core" : uses
+FaultsFeature ..> "core" : uses
+
+
+' Połączenia z main.dart
+MainFile ..> RentalFeature
+MainFile ..> WalletFeature
+MainFile ..> FaultsFeature
+MainFile ..> AuthFeature
+MainFile ..> AccountFeature
+
+@enduml

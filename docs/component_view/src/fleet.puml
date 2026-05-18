@@ -1,0 +1,35 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+skinparam linetype ortho
+
+title Diagram Komponentów - Domena Monitoringu Floty
+
+    Container(api_gateway, "API Gateway", "Spring Cloud", "Punkt wejścia HTTP")
+    ContainerQueue(message_bus, "Szyna Zdarzeń", "Kafka", "Publikacja zdarzeń")
+    ContainerDb(cache, "Cache", "Redis", "Zapis pozycji rowerów")
+
+System_Ext(iot_device, "Urządzenie IoT", "Rower / Stacja")
+
+' --- WNĘTRZE DOMENY ---
+Container_Boundary(domain, "Domena Monitoringu Floty") {
+    Component(mqtt_broker, "MQTT Broker", "Mosquitto", "Brama dla urządzeń, obsługa tysięcy połączeń")
+    Component(fleet_service, "Serwis Floty", "Java/Spring Boot", "Logika Geofencingu, przetwarzanie sygnałów, statusy techniczne")
+    
+    ComponentDb(fleet_db, "Baza Operacyjna (GIS)", "PostgreSQL + PostGIS", "Strefy, statusy rowerów")
+    ComponentDb(telemetry_db, "Baza Telemetryczna", "InfluxDB", "Historia logów GPS")
+}
+
+' --- RELACJE ---
+Rel(api_gateway, fleet_service, "Zapytania o stan floty", "REST")
+
+Rel(iot_device, mqtt_broker, "Telimetria/blokada", "MQTT")
+Rel(mqtt_broker, fleet_service, "Przekazuje strumień", "TCP Stream")
+
+Rel(fleet_service, fleet_db, "R/W (Dane relacyjne)", "JDBC")
+Rel(fleet_service, telemetry_db, "Write (Logi)", "HTTP")
+Rel(fleet_service, cache, "Update (Live Map)", "TCP")
+
+Rel(fleet_service, message_bus, "Pub: Poza Strefą", "TCP")
+
+@enduml
