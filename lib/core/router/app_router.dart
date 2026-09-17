@@ -10,7 +10,6 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/pages/login_screen.dart';
 import '../../features/auth/presentation/pages/register_screen.dart';
 import '../../features/map/presentation/pages/map_screen.dart';
-import '../../features/number_trivia/presentation/pages/number_trivia_page.dart';
 import '../../features/options/presentation/pages/options_screen.dart';
 import '../../features/rental/presentation/pages/end_rental_screen.dart';
 import '../../features/rental/presentation/pages/qr_scan_screen.dart';
@@ -80,10 +79,6 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: '/trivia',
-        builder: (context, state) => const NumberTriviaPage(),
       ),
       GoRoute(
         path: '/wallet',

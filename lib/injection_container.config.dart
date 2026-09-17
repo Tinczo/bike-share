@@ -50,20 +50,6 @@ import 'features/map/domain/usecases/get_nearby_bikes.dart' as _i990;
 import 'features/map/domain/usecases/get_stations.dart' as _i284;
 import 'features/map/domain/usecases/invalidate_map_cache.dart' as _i136;
 import 'features/map/presentation/bloc/map_bloc.dart' as _i236;
-import 'features/number_trivia/data/datasources/number_trivia_local_datasource.dart'
-    as _i1020;
-import 'features/number_trivia/data/datasources/number_trivia_remote_datasource.dart'
-    as _i724;
-import 'features/number_trivia/data/repositories/number_trivia_repository_impl.dart'
-    as _i36;
-import 'features/number_trivia/domain/contracts/number_trivia_repository_contract.dart'
-    as _i90;
-import 'features/number_trivia/domain/usecases/get_concrete_number_trivia.dart'
-    as _i285;
-import 'features/number_trivia/domain/usecases/get_random_number_trivia.dart'
-    as _i722;
-import 'features/number_trivia/presentation/bloc/number_trivia_bloc.dart'
-    as _i65;
 import 'features/options/data/datasources/options_local_datasource.dart'
     as _i690;
 import 'features/options/data/repositories/options_repository_impl.dart'
@@ -119,14 +105,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => registerModule.secureStorage,
     );
-    gh.lazySingleton<_i724.NumberTriviaRemoteDataSource>(
-      () => _i724.NumberTriviaRemoteDataSourceImpl(client: gh<_i519.Client>()),
-    );
-    gh.lazySingleton<_i1020.NumberTriviaLocalDataSource>(
-      () => _i1020.NumberTriviaLocalDataSourceImpl(
-        sharedPreferences: gh<_i460.SharedPreferences>(),
-      ),
-    );
     gh.lazySingleton<_i297.MapLocalDataSource>(
       () => _i297.MapLocalDataSourceImpl(
         sharedPreferences: gh<_i460.SharedPreferences>(),
@@ -172,24 +150,11 @@ extension GetItInjectableX on _i174.GetIt {
         baseUrlProvider: gh<_i755.BaseUrlProvider>(),
       ),
     );
-    gh.lazySingleton<_i90.NumberTriviaRepository>(
-      () => _i36.NumberTriviaRepositoryImpl(
-        remoteDataSource: gh<_i724.NumberTriviaRemoteDataSource>(),
-        localDataSource: gh<_i1020.NumberTriviaLocalDataSource>(),
-        networkInfo: gh<_i75.NetworkInfo>(),
-      ),
-    );
     gh.lazySingleton<_i316.RentalRemoteDataSource>(
       () => _i316.RentalRemoteDataSourceImpl(
         dio: gh<_i361.Dio>(),
         baseUrlProvider: gh<_i755.BaseUrlProvider>(),
       ),
-    );
-    gh.lazySingleton<_i285.GetConcreteNumberTrivia>(
-      () => _i285.GetConcreteNumberTrivia(gh<_i90.NumberTriviaRepository>()),
-    );
-    gh.lazySingleton<_i722.GetRandomNumberTrivia>(
-      () => _i722.GetRandomNumberTrivia(gh<_i90.NumberTriviaRepository>()),
     );
     gh.lazySingleton<_i54.WalletRemoteDataSource>(
       () => _i54.WalletRemoteDataSourceImpl(
@@ -260,13 +225,6 @@ extension GetItInjectableX on _i174.GetIt {
         remoteDataSource: gh<_i588.AuthRemoteDataSource>(),
         localDataSource: gh<_i1043.AuthLocalDataSource>(),
         networkInfo: gh<_i75.NetworkInfo>(),
-      ),
-    );
-    gh.factory<_i65.NumberTriviaBloc>(
-      () => _i65.NumberTriviaBloc(
-        getConcreteNumberTrivia: gh<_i285.GetConcreteNumberTrivia>(),
-        getRandomNumberTrivia: gh<_i722.GetRandomNumberTrivia>(),
-        inputConverter: gh<_i702.InputConverter>(),
       ),
     );
     gh.lazySingleton<_i193.WalletRepository>(

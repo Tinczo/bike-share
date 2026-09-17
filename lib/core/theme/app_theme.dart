@@ -99,6 +99,5 @@ class AppTheme {
   }
 }
 
-// Legacy themes for Number Trivia (to avoid breaking current UI if needed)
 ThemeData appTheme = AppTheme.lightTheme;
 ThemeData darkTheme = AppTheme.darkTheme;
