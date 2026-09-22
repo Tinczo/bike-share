@@ -272,6 +272,40 @@ void main() {
         const RentalFailure(iotFailureMessage),
       ],
     );
+
+    blocTest<RentalBloc, RentalState>(
+      'starts the rental only once when the event is added twice in a row',
+      build: () {
+        when(() => mockStartRental(any())).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          return Right(tRental);
+        });
+        return bloc;
+      },
+      act: (bloc) {
+        bloc.add(
+          const RentalStarted(
+            bikeId: 'bike-123',
+            method: RentalLaunchMethod.qr,
+          ),
+        );
+        bloc.add(
+          const RentalStarted(
+            bikeId: 'bike-123',
+            method: RentalLaunchMethod.qr,
+          ),
+        );
+      },
+      wait: const Duration(milliseconds: 150),
+      expect: () => [
+        const RentalStarting(),
+        const RentalUnlocking(),
+        isA<RentalActive>().having((s) => s.rental, 'rental', tRental),
+      ],
+      verify: (_) {
+        verify(() => mockStartRental(any())).called(1);
+      },
+    );
   });
 
   group('RentalPauseToggled', () {

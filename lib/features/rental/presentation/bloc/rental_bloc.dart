@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
@@ -49,8 +50,11 @@ class RentalBloc extends Bloc<RentalEvent, RentalState> {
     required this.getActiveRental,
   }) : super(const RentalInitial()) {
     on<CheckEligibilityRequested>(_onCheckEligibilityRequested);
-    on<RentalStarted>(_onRentalStarted);
-    on<RentalStartWithCheckRequested>(_onRentalStartWithCheckRequested);
+    on<RentalStarted>(_onRentalStarted, transformer: droppable());
+    on<RentalStartWithCheckRequested>(
+      _onRentalStartWithCheckRequested,
+      transformer: droppable(),
+    );
     on<RentalPauseToggled>(_onRentalPauseToggled);
     on<RentalEndRequested>(_onRentalEndRequested);
     on<ActiveRentalLoaded>(_onActiveRentalLoaded);
